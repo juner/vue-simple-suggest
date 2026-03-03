@@ -31,11 +31,9 @@
 }
 
 .vue-simple-suggest.designed .suggestions {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 100%;
-    top: calc(100% + 5px);
+    top: calc(var(--target-bottom) * 1px + 5px);
+    left: calc(var(--target-left) * 1px);
+    width: calc(var(--target-width) * 1px);
     border-radius: 3px;
     border: 1px solid #aaa;
     background-color: #fff;

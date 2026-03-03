@@ -1,5 +1,5 @@
 <template>
-  <div class="vue-simple-suggest" :class="[ styles.vueSimpleSuggest, { designed: !destyled, focus: isInFocus } ]" @keydown.tab="isTabbed = true">
+  <div class="vue-simple-suggest" :class="[ styles.vueSimpleSuggest, { designed: !destyled, focus: isInFocus } ]" @keydown.tab="isTabbed = true" :style="popoverStyled">
     <div
       ref="inputSlot" class="input-wrapper" role="combobox" aria-haspopup="listbox"
       :aria-owns="listId" :aria-expanded="!!listShown && !removeList ? 'true' : 'false'" :class="styles.inputWrapper"
@@ -16,8 +16,9 @@
         </template>
       </Suspense>
     </div>
-    <transition name="vue-simple-suggest">
+    <transition name="vue-simple-suggest" @before-enter="el => showPopover(el)" @after-leave="hidePopover">
       <ul
+        popover="manual"
         v-if="!!listShown && !removeList" :id="listId" class="suggestions" role="listbox"
         :aria-labelledby="listId" :class="styles.suggestions"
       >
@@ -86,8 +87,9 @@ export default {
       isFalseFocus: false,
       isTabbed: false,
       controlScheme: {},
-      listId: `${this.$.uid}-suggestions`
-    }
+      listId: `${this.$.uid}-suggestions`,
+      popoverStyle: { top: 0, left: 0, right: 0, bottom: 0, height: 0, width: 0 }
+    };
   },
   computed: {
     listIsRequest () {
@@ -132,6 +134,17 @@ export default {
         onKeydown: this.onKeyDown,
         onKeyup: this.onListKeyUp
       })
+    },
+    popoverStyled () {
+      const { top, bottom, left, right, height, width } = this.popoverStyle;
+      return {
+        [`--target-top`]: top,
+        [`--target-bottom`]: bottom,
+        [`--target-left`]: left,
+        [`--target-right`]: right,
+        [`--target-height`]: height,
+        [`--target-width`]: width,
+      };
     }
   },
   watch: {
@@ -578,6 +591,27 @@ export default {
     },
     filterDefault (item, query) {
       return query ? this.displayProperty(item).toLowerCase().indexOf(query.toLowerCase()) > -1 : true
+    },
+    async showPopover (el) {
+      const opened = el.matches(':popover-open');
+      if (opened) return;
+      this.setPopoverPositionStyle();
+      this.$nextTick(() => {
+        el.showPopover();
+      })
+    },
+    async hidePopover (el) {
+      const opened = el.matches(':popover-open');
+      if (!opened) return;
+      el.hidePopover();
+    },
+    setPopoverPositionStyle () {
+      const input = this.inputElement;
+      let pos = { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 };
+      if (input) {
+        pos = input.getBoundingClientRect();
+      }
+      this.popoverStyle = pos;
     }
   }
 }
