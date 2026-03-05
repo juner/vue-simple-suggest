@@ -21,6 +21,7 @@
         popover="manual"
         v-if="!!listShown && !removeList" :id="listId" class="suggestions" role="listbox"
         :aria-labelledby="listId" :class="styles.suggestions"
+        :style="withPositionAnchor"
       >
         <li v-if="!!$slots['misc-item-above']" :class="styles.miscItemAbove">
           <slot name="misc-item-above" :suggestions="suggestions" :query="text" />
@@ -46,6 +47,8 @@
 
 <script>
 import { defaultControls, modes, isOn, hasKeyCodeByCode, hasKeyCode, getPropertyByAttribute } from './utils.js'
+
+const supportsAnchor = CSS.supports("(inset: anchor(bottom)) and (anchor-name: --a) and (position-anchor: --a)");
 
 export default {
   name: 'VueSimpleSuggest',
@@ -89,6 +92,9 @@ export default {
       controlScheme: {},
       listId: `${this.$.uid}-suggestions`,
       popoverStyle: undefined,
+      popoverAbort: undefined,
+      anchorName: `--popover-${this.$.uid}`,
+      withPositionAnchor: supportsAnchor ? `position-anchor: --popover-${this.$.uid}` : undefined
     };
   },
   computed: {
@@ -225,6 +231,9 @@ export default {
         this.inputElement.setAttribute('aria-activedescendant', '')
         this.inputElement.setAttribute('aria-autocomplete', 'list')
         this.inputElement.setAttribute('aria-controls', this.listId)
+        if (supportsAnchor && "anchorName" in this.inputElement.style) {
+          this.inputElement.style.anchorName = this.anchorName;
+        }
       }
     },
     isScopedSlotEmpty (slot) {
@@ -597,7 +606,11 @@ export default {
     async showPopover (el) {
       const opened = el.matches(':popover-open');
       if (opened) return;
-      this.setPopoverPositionStyle();
+      this.popoverAbort?.();
+      const controller = new AbortController();
+      this.popoverAbort = controller.abort.bind(controller);
+      const signal = controller.signal;
+      this.registerParentEvents(this.inputElement, signal);
       this.$nextTick(() => {
         el.showPopover();
       })
@@ -605,6 +618,7 @@ export default {
     async hidePopover (el) {
       const opened = el.matches(':popover-open');
       if (!opened) return;
+      this.popoverAbort?.();
       el.hidePopover();
     },
     setPopoverPositionStyle () {
@@ -633,6 +647,24 @@ export default {
         }
       }
       this.popoverStyle = pos;
+    },
+    registerParentEvents(el, signal) {
+      if (supportsAnchor) return;
+      this.setPopoverPositionStyle();
+      const setPopoverPositionStyle = this.setPopoverPositionStyle.bind(this);
+      window.addEventListener("resize",setPopoverPositionStyle, { capture: true, passive: true, signal })
+      // scroll イベントの登録
+      while (el) {
+        const style = globalThis.getComputedStyle(el);
+        const overflowX = style.overflowX;
+        const overflowY = style.overflowY;
+        // スクロールが表示できる 且つ コンテンツが スクロールするサイズ の判定
+        const canScroll = overflowIsScroll.has(overflowY) || overflowIsScroll.has(overflowX);
+        // スクロールが必要そうなら イベントを監視する
+        if (canScroll) el.addEventListener("scroll", setPopoverPositionStyle, { capture: true, passive: true, signal });
+        el = el.offsetParent;
+      }
+      window.addEventListener("scroll", setPopoverPositionStyle, { capture: true, passive: true, signal });
     }
   }
 }

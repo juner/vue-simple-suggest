@@ -30,7 +30,7 @@
     border: 1px solid #aaa;
 }
 
-.vue-simple-suggest.designed .suggestions {
+.vue-simple-suggest.designed .suggestions:popover-open {
     top: calc(var(--target-top-bottom) * 1px + 5px);
     left: calc(var(--target-left-left) * 1px);
     right: calc(var(--target-right-righth) * 1px);
@@ -38,7 +38,13 @@
     border: 1px solid #aaa;
     background-color: #fff;
     opacity: 1;
-    z-index: 1000;
+}
+@supports (inset: anchor(bottom)) and (anchor-name: --a) and (position-anchor: --a) {
+    .vue-simple-suggest.designed .suggestions:popover-open {
+        top: calc(anchor(bottom) + 5px);
+        left: anchor(left);
+        right: anchor(right);
+    }
 }
 
 .vue-simple-suggest.designed .suggestions .suggest-item {
