@@ -88,7 +88,7 @@ export default {
       isTabbed: false,
       controlScheme: {},
       listId: `${this.$.uid}-suggestions`,
-      popoverStyle: { top: 0, left: 0, right: 0, bottom: 0, height: 0, width: 0 }
+      popoverStyle: undefined,
     };
   },
   computed: {
@@ -136,14 +136,16 @@ export default {
       })
     },
     popoverStyled () {
-      const { top, bottom, left, right, height, width } = this.popoverStyle;
+      const style = this.popoverStyle;
       return {
-        [`--target-top`]: top,
-        [`--target-bottom`]: bottom,
-        [`--target-left`]: left,
-        [`--target-right`]: right,
-        [`--target-height`]: height,
-        [`--target-width`]: width,
+        [`--target-top-top`]: style?.top.top,
+        [`--target-top-bottom`]: style?.top.bottom,
+        [`--target-bottom-top`]: style?.bottom.top,
+        [`--target-bottom-bottom`]: style?.bottom.bottom,
+        [`--target-left-left`]: style?.left.left,
+        [`--target-left-right`]: style?.left.right,
+        [`--target-right-left`]: style?.right.left,
+        [`--target-right-right`]: style?.right.right,
       };
     }
   },
@@ -607,9 +609,28 @@ export default {
     },
     setPopoverPositionStyle () {
       const input = this.inputElement;
-      let pos = { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 };
+      let pos = undefined;
       if (input) {
-        pos = input.getBoundingClientRect();
+        const { height, width } = document.documentElement.getBoundingClientRect();
+        const rect = input.getBoundingClientRect();
+        pos = {
+          left: {
+            left: rect.left,
+            right: rect.right,
+          },
+          top: {
+            top: rect.top,
+            bottom: rect.bottom,
+          },
+          right: {
+            left: width - rect.left,
+            right: width - rect.right,
+          },
+          bottom: {
+            top: height - rect.top,
+            bottom: height - rect.bottom,
+          },
+        }
       }
       this.popoverStyle = pos;
     }

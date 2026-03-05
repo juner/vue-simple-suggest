@@ -46,6 +46,8 @@ export default {
 </script>
 
 <style>
+@import url("../dist/style.css");
+/** @import url("../public/style.css") */
 .mainWrapper {
   width: 70vw;
   margin-left: auto;
